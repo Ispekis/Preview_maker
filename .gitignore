@@ -2,3 +2,7 @@
 tmp
 *~
 *.exe
+build
+dist
+*.spec
+!executables/*.exe
