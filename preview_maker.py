@@ -94,15 +94,15 @@ def create_video_preview(video_file:str, output_preview:str, is_mute:bool, previ
     # Clean up the temporary directory
     os.rmdir(output_dir)
 
-def is_valid_video_path(file_path):
+def is_valid_video_path(parser, file_path):
     if os.path.exists(file_path):
         if file_path.lower().endswith('.mp4'):
             return True
         else:
-            print(f"File '{file_path}' is not a valid video format.")
+            parser.error(f"File '{file_path}' is not a valid video format.")
             return False
     else:
-        print(f"File '{file_path}' does not exist.")
+        parser.error(f"File '{file_path}' does not exist.")
         return False
 
 def get_output_fd(is_verb):
@@ -140,12 +140,17 @@ if __name__ == "__main__":
         print(f"Version : {VERSION}")
         sys.exit(0)
 
-    if not is_valid_video_path(args.file):
+    if not is_valid_video_path(parser, args.file):
         sys.exit(1)
 
     show_config(args)
     fds = get_output_fd(args.verbose)
-    # # Create a preview from the input video
-    create_video_preview(args.file, args.output, args.mute, args.length, args.number_clips, args.ffmpeg_path, fds)
+    # Create a preview from the input video
+    try:
+        create_video_preview(args.file, args.output, args.mute, args.length, args.number_clips, args.ffmpeg_path, fds)
+    except FileNotFoundError:
+        parser.error("The ffmpeg executable is not found, please provide one with --ffmpeg-path ffmpeg_path")
+    except Exception as e:
+        print(e)
     print(f"Preview video saved as {args.output}")
 
