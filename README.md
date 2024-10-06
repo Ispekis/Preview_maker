@@ -37,6 +37,7 @@
 
 ### Options
 
+- `--version` : Show the version of the script.
 - `-f`, `--file`: Path to the input video file (required).
 - `-o`, `--output`: Path to save the generated preview video (optional, defaults to `preview.mp4`).
 - `-m`, `--mute`: Mute the preview video (optional).
