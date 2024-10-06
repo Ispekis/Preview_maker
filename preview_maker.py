@@ -1,13 +1,23 @@
+"""
+Filename: preview_maker
+Author: Vincent SHAO
+Date: 2024/06/10
+Description: Generate a preview video from the original video by extracting multiple clips.
+Version: 1.0.0
+"""
+
 import subprocess
 import os
 import sys
 import argparse
 
+VERSION="1.0.0"
+
 def get_video_duration(video_file, ffmpeg_path):
     """Get the total duration of the video using FFmpeg."""
     result = subprocess.run(
-        [ffmpeg_path, '-i', video_file], 
-        stderr=subprocess.PIPE, 
+        [ffmpeg_path, '-i', video_file],
+        stderr=subprocess.PIPE,
         stdout=subprocess.PIPE
     )
     output = result.stderr.decode('utf-8')
@@ -55,8 +65,8 @@ def concatenate_clips(clip_paths, output_preview, ffmpeg_path, fds):
 
     print("Concatening clips...")
     subprocess.run([
-        ffmpeg_path, '-f', 'concat', '-safe', '0', '-i', 'file_list.txt', 
-        '-c:v', 'libx264', '-crf', '23', '-preset', 'veryfast', 
+        ffmpeg_path, '-f', 'concat', '-safe', '0', '-i', 'file_list.txt',
+        '-c:v', 'libx264', '-crf', '23', '-preset', 'veryfast',
         '-c:a', 'aac', '-b:a', '128k', '-movflags', 'faststart',  # Added movflags
         output_preview, '-y'
     ], stdout=fds[0], stderr=fds[1])
@@ -88,7 +98,12 @@ def is_valid_video_path(file_path):
     if os.path.exists(file_path):
         if file_path.lower().endswith('.mp4'):
             return True
-    return False
+        else:
+            print(f"File '{file_path}' is not a valid video format.")
+            return False
+    else:
+        print(f"File '{file_path}' does not exist.")
+        return False
 
 def get_output_fd(is_verb):
     if (is_verb):
@@ -98,34 +113,39 @@ def get_output_fd(is_verb):
 
 def show_config(args):
     print(
-        f"You have chosen to process the video '{args['file']}' with the following options:\n"
-        f"  - Output file:        '{args['output']}'\n"
-        f"  - Mute audio:         {'enabled' if args['mute'] else 'disabled'}\n"
-        f"  - Preview length:     {args['length']} seconds\n"
-        f"  - Number of clips:    {args['number_clips']}\n"
-        f"  - FFmpeg path:        '{args['ffmpeg_path']}'\n"
-        f"  - Verbose mode:       {'enabled' if args['verbose'] else 'disabled'}."
+        f"You have chosen to process the video '{args.file}' with the following options:\n"
+        f"  - Output file:        '{args.output}'\n"
+        f"  - Mute audio:         {'enabled' if args.mute else 'disabled'}\n"
+        f"  - Preview length:     {args.length} seconds\n"
+        f"  - Number of clips:    {args.number_clips}\n"
+        f"  - FFmpeg path:        '{args.ffmpeg_path}'\n"
+        f"  - Verbose mode:       {'enabled' if args.verbose else 'disabled'}."
     )
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a preview video from the original video by extracting multiple clips.")
-    parser.add_argument("-f", "--file", type=str, required=True, help="Path to the input video file.")
-    parser.add_argument("-o", "--output", type=str, required=False, default="preview.mp4", help="Path to save the generated preview video. Defaults to 'preview.mp4'.")
+    parser_group = parser.add_mutually_exclusive_group(required=True)
+    parser_group.add_argument("--version", action="store_true", required=False, help="Show the version of the script.")
+    parser_group.add_argument("-f", "--file", type=str, metavar="filepath", required=False, help="Path to the input video file.")
+    parser.add_argument("-o", "--output", type=str, metavar="output_file", required=False, default="preview.mp4", help="Path to save the generated preview video. Defaults to 'preview.mp4'.")
     parser.add_argument("-m", "--mute", action="store_true", required=False, help="Mute the preview video (remove the audio). Defaults to False.")
-    parser.add_argument("-l", "--length", type=int, required=False, default=60, help="Total length (in seconds) of the preview video. Defaults to 60 seconds.")
-    parser.add_argument("-n", "--number-clips", type=int, required=False, default=15, help="Number of clips to extract from the original video for the preview. Defaults to 15 clips.")
-    parser.add_argument("--ffmpeg-path", type=str, required=False, default="ffmpeg", help="Optional custom path to the ffmpeg executable. Defaults to 'ffmpeg' in the system path.")
+    parser.add_argument("-l", "--length", type=int, metavar="preview_length", required=False, default=60, help="Total length (in seconds) of the preview video. Defaults to 60 seconds.")
+    parser.add_argument("-n", "--number-clips", type=int, metavar="number_of_clips", required=False, default=15, help="Number of clips to extract from the original video for the preview. Defaults to 15 clips.")
+    parser.add_argument("--ffmpeg-path", type=str, required=False, metavar="ffmpeg_path", default="ffmpeg", help="Optional custom path to the ffmpeg executable. Defaults to 'ffmpeg' in the system path.")
     parser.add_argument("-v", "--verbose", action="store_true", required=False, help="Enable verbose output for detailed logging. Defaults to False.")
-    args = vars(parser.parse_args())
+    args = parser.parse_args()
 
-    if not is_valid_video_path(args["file"]):
+    if (args.version):
+        print(f"Version : {VERSION}")
+        sys.exit(0)
+
+    if not is_valid_video_path(args.file):
         sys.exit(1)
 
     show_config(args)
-
-    fds = get_output_fd(args['verbose'])
+    fds = get_output_fd(args.verbose)
     # # Create a preview from the input video
-    create_video_preview(args['file'], args['output'], args['mute'], args['length'], args['number_clips'], args['ffmpeg_path'], fds)
-    print(f"Preview video saved as {args['output']}")
+    create_video_preview(args.file, args.output, args.mute, args.length, args.number_clips, args.ffmpeg_path, fds)
+    print(f"Preview video saved as {args.output}")
 
